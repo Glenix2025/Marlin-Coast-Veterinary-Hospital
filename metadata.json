@@ -1,0 +1,6 @@
+{
+  "name": "Marlin Coast Vet AI Assistant",
+  "description": "AI Chatbot and FAQ assistant for Marlin Coast Veterinary Hospital in Trinity Beach, Far North Queensland.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
