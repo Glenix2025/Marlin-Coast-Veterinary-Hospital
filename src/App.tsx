@@ -7,7 +7,7 @@ import { ChatMessageItem } from './components/ChatMessageItem';
 import { ClinicDrawer } from './components/ClinicDrawer';
 import { PetSelector } from './components/PetSelector';
 import { ChatMessage } from './types';
-import { CLINIC_INFO } from './data/faqData';
+import { CLINIC_INFO, findBestFAQMatch } from './data/faqData';
 
 const INITIAL_WELCOME_MSG: ChatMessage = {
   id: 'welcome-1',
@@ -50,8 +50,10 @@ export default function App() {
     if (!textToSend) setInputText('');
     setIsLoading(true);
 
+    let botReplyText = '';
+    let isEmergency = false;
+
     try {
-      // Build API request payload
       const petContextPrefix = selectedPet
         ? `[Pet type context: ${selectedPet}] `
         : '';
@@ -61,38 +63,48 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `${petContextPrefix}${text}`,
-          history: messages.slice(-8), // Send recent message history for context
+          history: messages.slice(-8),
         }),
       });
 
-      const data = await response.json();
-
-      const botReplyText = data.reply || 'Thank you for your message. Please contact Marlin Coast Veterinary Hospital on 07 4057 6033 for assistance.';
-
-      const isEmergency = data.isEmergency || text.toLowerCase().includes('emergency') || text.toLowerCase().includes('after hours');
-
-      const botMessage: ChatMessage = {
-        id: `bot-${Date.now()}`,
-        sender: 'bot',
-        text: botReplyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isEmergencyAlert: isEmergency,
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Chat request error:', error);
-      const errorMessage: ChatMessage = {
-        id: `bot-err-${Date.now()}`,
-        sender: 'bot',
-        text: 'We encountered a momentary error connecting to our assistant. For immediate help, please call Marlin Coast Veterinary Hospital directly on **07 4057 6033**.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.reply) {
+          botReplyText = data.reply;
+          isEmergency = !!data.isEmergency;
+        }
+      }
+    } catch (err) {
+      console.info('Server API unavailable, utilizing client-side FAQ matcher:', err);
     }
+
+    // Client-side knowledge base matcher fallback (for GitHub Pages / static hosting or server offline)
+    if (!botReplyText) {
+      const { match, isEmergency: matchEmergency, isPriceQuery } = findBestFAQMatch(text);
+      isEmergency = matchEmergency || text.toLowerCase().includes('emergency') || text.toLowerCase().includes('after hours');
+
+      if (isEmergency) {
+        botReplyText = `🚨 **Pet Emergency Notice**\n\nMarlin Coast Veterinary Hospital provides an after hours emergency service for existing situations. If your pet is experiencing an urgent medical emergency, please call us immediately at **07 4057 6033**.\n\nOur clinic is located at Cnr Aropa St and Captain Cook Highway, Trinity Beach.`;
+      } else if (match) {
+        botReplyText = match.answer;
+      } else if (isPriceQuery) {
+        botReplyText = `Veterinary fees and treatment plans are assessed individually per pet during consultation based on their specific health requirements.\n\nFor pricing inquiries or custom quotes, please call our friendly team on **07 4057 6033** or book a consultation online at https://www.mcvet.com.au/appointment.\n\nWe also accept GapOnly, Zip Pay, and VetPay payment options.`;
+      } else {
+        botReplyText = `Thank you for contacting Marlin Coast Veterinary Hospital! \n\nFor questions regarding "${text}", please call our reception team directly on **07 4057 6033**, email **admin@mcvet.com.au**, or book an appointment online anytime at https://www.mcvet.com.au/appointment.`;
+      }
+    }
+
+    const botMessage: ChatMessage = {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      text: botReplyText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isEmergencyAlert: isEmergency,
+    };
+
+    setMessages((prev) => [...prev, botMessage]);
+    setIsLoading(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleClearChat = () => {

@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
-import { FAQ_KNOWLEDGE_BASE, CLINIC_INFO, findBestFAQMatch } from './src/data/faqData.js';
+import { FAQ_KNOWLEDGE_BASE, CLINIC_INFO, findBestFAQMatch } from './src/data/faqData';
 
 dotenv.config();
 

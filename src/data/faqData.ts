@@ -145,9 +145,9 @@ export const FAQ_KNOWLEDGE_BASE: FAQItem[] = [
   {
     id: 13,
     question: 'Can I order pet medication or prescription food online?',
-    answer: 'Yes, via https://www.mcvet.com.au/order-online, which covers medication requests and prescription food requests.',
+    answer: 'Yes! You can conveniently order pet medication and prescription food online at https://www.mcvet.com.au/order-online.',
     category: 'services',
-    keywords: ['medication', 'prescription', 'food', 'order online', 'refill', 'diet', 'pharmacy'],
+    keywords: ['medication', 'prescription', 'food', 'order online', 'order', 'refill', 'diet', 'pharmacy', 'medicine'],
   },
   {
     id: 14,
